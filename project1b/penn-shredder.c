@@ -6,7 +6,6 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <errno.h>
 
 /* Macro to universaly define the size of the input.
  *
@@ -193,10 +192,6 @@ void executeShell(int timeout) {
 
             do {
                 if (wait(&status) == -1) {
-                    if (errno == EINTR) {
-                        continue;
-                    }
-
 		    perror("Error in child process termination");
                     free(command);
                     exit(EXIT_FAILURE);
