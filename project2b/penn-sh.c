@@ -223,9 +223,12 @@ int parseCommand(char **tokens, int start, int end, char ***args,
                 writeToStdout("Invalid: Multiple standard input redirects or redirect in invalid location\n");
                 return -1;
             }
-            if (i + 1 >= end) {
-                writeToStdout("Invalid: redirect in invalid location\n");
-                return -1;
+            if (i + 1 >= end ||
+                 strcmp(tokens[i + 1], "<") == 0 ||
+                 strcmp(tokens[i + 1], ">") == 0 ||
+                 strcmp(tokens[i + 1], "|") == 0) {
+                 writeToStdout("Invalid: redirect in invalid location\n");
+                 return -1;
             }
             *inFile = tokens[i + 1];
             inCount++;
@@ -239,7 +242,10 @@ int parseCommand(char **tokens, int start, int end, char ***args,
                 writeToStdout("Invalid: Multiple standard output redirects\n");
                 return -1;
             }
-            if (i + 1 >= end) {
+            if (i + 1 >= end ||
+		strcmp(tokens[i + 1], "<") == 0 ||
+                strcmp(tokens[i + 1], ">") == 0 ||
+                strcmp(tokens[i + 1], "|") == 0) {		
                 writeToStdout("Invalid: redirect in invalid location\n");
                 return -1;
             }
@@ -332,7 +338,10 @@ void executeSimple(char **commandArray) {
         /* Child: restore the default SIGINT behavior (after execvp the
          * child's disposition is default anyway, so Ctrl-C terminates it).
          */
-        signal(SIGINT, SIG_DFL);
+	if (signal(SIGINT, SIG_DFL) == SIG_ERR) {
+            perror("Invalid signal");
+	    exit(EXIT_FAILURE);
+	}
 
         if (inFile != NULL) {
             redirectionsSTDINtoFile(inFile);
@@ -411,7 +420,10 @@ void executePipe(char **commandArray) {
 
     if (childPid1 == 0) {
         /* Writer process: left command, stdout -> pipe write end. */
-        signal(SIGINT, SIG_DFL);
+	if (signal(SIGINT, SIG_DFL) == SIG_ERR) {
+            perror("Invalid signal");
+            exit(EXIT_FAILURE);
+        }
 
         close(fd[0]); /* the writer does not read from the pipe */
 
@@ -439,7 +451,10 @@ void executePipe(char **commandArray) {
 
     if (childPid2 == 0) {
         /* Reader process: right command, stdin <- pipe read end. */
-        signal(SIGINT, SIG_DFL);
+	if (signal(SIGINT, SIG_DFL) == SIG_ERR) {
+        perror("Invalid signal");
+        exit(EXIT_FAILURE);
+        }
 
         close(fd[1]); /* the reader does not write to the pipe */
 
